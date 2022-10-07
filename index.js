@@ -2,17 +2,22 @@ const express = require("express");
 const app = express();
 
 app.set("view engine", "ejs");
+app.use(express.static("public"));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.get("/", (req, res) => {
-  const nome = "Rafael";
-  const lang = "JavaScript";
+  res.render("index");
+});
 
-  res.render("index", {
-    nome: nome,
-    lang: lang,
-    empresa: "Udemy",
-    inscritos: 8000
-  });
+app.get("/perguntar", (req, res) => {
+  res.render("perguntar");
+});
+
+app.post("/salvar-pergunta", (req, res) => {
+  const { titulo, descricao } = req.body;
+
+  res.json({ titulo, descricao });
 });
 
 app.listen(3333, () => {
