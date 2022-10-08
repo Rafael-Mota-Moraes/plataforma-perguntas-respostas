@@ -1,5 +1,7 @@
 const express = require("express");
 const connection = require("./database/database");
+const Pergunta = require("./database/Pergunta");
+const Resposta = require("./database/Resposta");
 
 const app = express();
 
@@ -19,7 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.render("index");
+  Pergunta.findAll({ raw: true, order: [["id", "DESC"]] }).then((perguntas) => {
+    res.render("index", { perguntas: perguntas });
+  });
 });
 
 app.get("/perguntar", (req, res) => {
@@ -29,7 +33,47 @@ app.get("/perguntar", (req, res) => {
 app.post("/salvar-pergunta", (req, res) => {
   const { titulo, descricao } = req.body;
 
-  res.json({ titulo, descricao });
+  Pergunta.create({
+    titulo: titulo,
+    descricao: descricao
+  }).then(() => {
+    res.redirect("/");
+  });
+});
+
+app.get("/pergunta/:id", (req, res) => {
+  const { id } = req.params;
+
+  Pergunta.findOne({
+    where: { id: id }
+  })
+    .then((pergunta) => {
+      if (pergunta != undefined) {
+        Resposta.findAll({
+          where: { perguntaId: pergunta.id },
+          order: [["id", "DESC"]]
+        }).then((respostas) => {
+          res.render("pergunta", { pergunta, respostas });
+        });
+      } else {
+        res.redirect("/");
+      }
+    })
+    .catch((erro) => console.log(`Ocorreu um erro: ${erro}`));
+});
+
+app.post("/responder", (req, res) => {
+  const { corpo, pergunta } = req.body;
+  const perguntaId = Number(pergunta);
+
+  Resposta.create({
+    corpo: corpo,
+    perguntaId: perguntaId
+  })
+    .then(() => {
+      res.redirect(`/pergunta/${perguntaId}`);
+    })
+    .catch(() => console.log("Erro!"));
 });
 
 app.listen(3333, () => {
